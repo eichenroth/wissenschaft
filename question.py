@@ -14,7 +14,7 @@ if __name__ == '__main__':
   args = parser.parse_args()
 
   faiss = FAISS.load_local(ASSET_PATH, OpenAIEmbeddings(), INDEX_NAME)
-  chain = RetrievalQAWithSourcesChain.from_chain_type(llm=ChatOpenAI(temperature=0, model="gpt-3.5-turbo-16k"), retriever=faiss.as_retriever())
+  chain = RetrievalQAWithSourcesChain.from_chain_type(llm=ChatOpenAI(temperature=0, model="gpt-4"), retriever=faiss.as_retriever())
 
   result = chain({"question": args.question})
   print(f"Answer: {result['answer']}")
