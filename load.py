@@ -1,5 +1,6 @@
 import time
-from typing import Any, Generator, List
+from pathlib import Path
+from typing import List
 
 from langchain.document_loaders import PyPDFLoader
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -9,26 +10,32 @@ from langchain.vectorstores import FAISS
 from common import ASSET_PATH, INDEX_NAME
 
 
-def load_document_pages() -> Generator[List[Document], Any, None]:
-  paths = list(str(path) for path in ASSET_PATH.glob('**/*.pdf'))
+def get_document_paths() -> List[Path]:
+  paths = list(path for path in ASSET_PATH.glob('**/*.pdf'))
   paths.sort()
+  return paths
 
-  for path in paths:
-    print(path)
-    loader = PyPDFLoader(path)
-    yield loader.load_and_split()
+
+def load_pages(path:Path) -> List[Document]:
+  loader = PyPDFLoader(str(path))
+  return loader.load_and_split()
 
 
 if __name__ == '__main__':
+  embeddings = OpenAIEmbeddings()
   faiss = None
-  
-  for document_pages in load_document_pages():
-    if faiss is None:
-      faiss = FAISS.from_documents(document_pages, OpenAIEmbeddings())
+  try: faiss = FAISS.load_local(ASSET_PATH, embeddings, INDEX_NAME)
+  except: pass
 
-      faiss.index
+  for document_path in get_document_paths():
+    print(str(document_path))
+
+    if faiss is None: faiss = FAISS.from_documents(load_pages(document_path), embeddings)
     else:
-      faiss.add_documents(document_pages)
+      sources = [doc.metadata.get('source') for doc in faiss.docstore._dict.values()]
+      if (str(document_path) in sources): continue
+
+      faiss.add_documents(load_pages(document_path))
     time.sleep(0.001)
 
-  faiss.save_local(ASSET_PATH, INDEX_NAME)
+    faiss.save_local(ASSET_PATH, INDEX_NAME)
