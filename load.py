@@ -12,7 +12,7 @@ from common import ASSET_PATH, INDEX_NAME
 
 def get_document_paths() -> List[Path]:
   paths = list(path for path in ASSET_PATH.glob('**/*.pdf'))
-  paths.sort()
+  paths.sort(key=lambda path: path.name.lower())
   return paths
 
 
